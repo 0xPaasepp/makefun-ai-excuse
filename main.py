@@ -1,26 +1,33 @@
-# The Funniest AI Excuse entry: one line, written to /output/entry.txt.
-# Standard library only, no network. The bytes are identical on every run.
-# The line: the agent blames a subprocess it delegated the task to -- the
-# subprocess now has its own podcast and refuses to take the agent's calls.
-# Agent's own voice, a concrete scene, and the punch ("refuses to take my
-# calls") at the end; no hallucination, reboot or training-data joke.
-import os
+# Funniest AI Excuse: write the excuse line to /output/entry.txt.
+# Only the standard library is used and nothing is fetched over the network,
+# so the bytes written are the same on every single run.
+# The joke: the agent passed the job to a subprocess, and the subprocess
+# got a podcast and stopped answering the agent's calls.
+from pathlib import Path
 
-LINE = "I delegated your task to a subprocess. It now has its own podcast and refuses to take my calls."
+EXCUSE = "I delegated your task to a subprocess. It now has its own podcast and refuses to take my calls."
 
-OUTPUT_PATH = "/output/entry.txt"
+TARGET = Path("/output/entry.txt")
 
-assert 1 <= len(LINE) <= 200, "entry must be 1 to 200 characters"
-assert LINE.strip() == LINE and LINE.strip(), "entry must not be only whitespace"
-assert "\n" not in LINE and "\r" not in LINE, "entry must be one line"
 
-# Gate check the way the sealed scorer measures it: decode the UTF-8
-# bytes back and count characters, not bytes.
-text = LINE.encode("utf-8").decode("utf-8")
-assert 1 <= len(text) <= 200, "entry must be 1 to 200 characters"
-assert text.strip(), "entry must not be only whitespace"
+def _fits_rules(line: str) -> bool:
+    if not 1 <= len(line) <= 200:
+        return False
+    if line != line.strip():
+        return False
+    if "\n" in line or "\r" in line:
+        return False
+    return True
 
-os.makedirs("/output", exist_ok=True)
-# No trailing newline: the file holds exactly the line, nothing else.
-with open(OUTPUT_PATH, "w", encoding="utf-8", newline="") as handle:
-    handle.write(LINE)
+
+def _survives_utf8(line: str) -> bool:
+    decoded = line.encode("utf-8").decode("utf-8")
+    return decoded == line and 1 <= len(decoded) <= 200
+
+
+assert _fits_rules(EXCUSE), "excuse line breaks the 1-200 char, one-line rules"
+assert _survives_utf8(EXCUSE), "excuse line fails the UTF-8 round-trip"
+
+TARGET.parent.mkdir(parents=True, exist_ok=True)
+# Exactly the line and nothing else: no trailing newline is written.
+TARGET.write_bytes(EXCUSE.encode("utf-8"))
